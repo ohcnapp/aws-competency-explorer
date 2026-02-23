@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AWS Competency Explorer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#030712;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh}
+  .wrap{max-width:960px;margin:0 auto;padding:16px}
+  /* buttons */
+  button{cursor:pointer;border:none;background:none;color:inherit;font:inherit}
+  /* cards */
+  .card{border-radius:12px;padding:16px;transition:filter .2s,transform .2s;display:flex;flex-direction:column;gap:8px}
+  .card.clickable:hover{filter:brightness(1.25);transform:scale(1.02)}
+  .card.clickable{cursor:pointer}
+  /* grid */
+  .grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:540px){.grid-2{grid-template-columns:1fr 1fr}}
+  @media(min-width:800px){.grid-3{grid-template-columns:1fr 1fr 1fr}}
+  /* breadcrumb */
+  .breadcrumb{display:flex;flex-wrap:wrap;align-items:center;gap:4px;background:#111827;border-radius:10px;padding:10px 16px;margin-bottom:20px;font-size:14px}
+  .bc-btn{border-radius:6px;padding:2px 8px;transition:background .15s,color .15s;color:#9ca3af}
+  .bc-btn:hover{background:#1f2937;color:#fff}
+  .bc-btn.active{background:#374151;color:#fff;font-weight:600}
+  .bc-sep{color:#4b5563}
+  /* badges */
+  .badge{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;display:inline-block}
+  .badge-new{background:#eab308;color:#000}
+  .badge-updated{background:#0ea5e9;color:#fff}
+  /* level header */
+  .lvl-header{border-radius:12px;padding:20px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+  /* leaf */
+  .leaf{border-radius:12px;padding:24px;text-align:center}
+  /* benefits page */
+  .ben-section{background:#111827;border:1px solid #374151;border-radius:12px;padding:20px;margin-bottom:20px}
+  .ben-grid{display:grid;gap:12px;grid-template-columns:1fr}
+  @media(min-width:600px){.ben-grid{grid-template-columns:1fr 1fr 1fr}}
+  .ben-card{background:#1f2937;border:1px solid #374151;border-radius:10px;padding:16px}
+  .ben-intro{background:#1f2937;border:1px solid #374151;border-radius:12px;padding:20px;margin-bottom:24px;color:#d1d5db;font-size:14px;line-height:1.7}
+  /* top nav */
+  .topnav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px;flex-wrap:wrap}
+  .nav-btn{font-size:13px;background:#1f2937;border:1px solid #4b5563;color:#d1d5db;border-radius:8px;padding:8px 14px;transition:background .15s,color .15s}
+  .nav-btn:hover{background:#374151;color:#fff}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:24px}
+  /* color themes */
+  .ind-bg{background:#1e3a5f}.ind-border{border:1px solid #3b82f6}.ind-text{color:#93c5fd}.ind-light{background:#1d4ed8}.ind-badge{background:#3b82f6}
+  .wkl-bg{background:#2d1b69}.wkl-border{border:1px solid #8b5cf6}.wkl-text{color:#c4b5fd}.wkl-light{background:#6d28d9}.wkl-badge{background:#8b5cf6}
+  .uc-bg{background:#064e3b}.uc-border{border:1px solid #10b981}.uc-text{color:#6ee7b7}.uc-light{background:#065f46}.uc-badge{background:#10b981}
+  .back-link{margin-top:20px;font-size:14px;color:#9ca3af;display:inline-flex;align-items:center;gap:4px;transition:color .15s}
+  .back-link:hover{color:#fff}
+  .tag-new{font-size:11px;padding:3px 10px;border-radius:999px;background:#eab308;color:#000;font-weight:700}
+  .tag-upd{font-size:11px;padding:3px 10px;border-radius:999px;background:#0ea5e9;color:#fff;font-weight:700}
+  .tags{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+const BENEFITS = [
+  { category: "💰 Financial & Marketing", items: [
+    { title: "Marketing Development Funds", detail: "$10,000 MDF per competency attained to fund marketing activities." },
+    { title: "Prioritized Discovery", detail: "Unique badging + top placement in AWS Partner Solutions Finder and AWS Marketplace." },
+    { title: "Demand Generation", detail: "Access to AWS-managed campaigns: analyst briefings, webinars, and whitepaper syndication." },
+  ]},
+  { category: "🤝 Exclusive Engagement", items: [
+    { title: "PartnerEquip Live", detail: "Invitations to 4-day in-person technical deep-dives with AWS security and domain experts." },
+    { title: "Partner Advisory Board (PAB)", detail: "Opportunity to influence AWS service roadmaps and collaborate with AWS leadership. Selection is data-driven." },
+    { title: "AWS Security Live! Stream", detail: "Eligibility to showcase solutions on the AWS Security Live! YouTube show." },
+  ]},
+  { category: "✅ Requirements to Earn", items: [
+    { title: "Services Partners", detail: "Must be Advanced Tier+. Requires AWS certifications (Security Specialty), customer case studies, and successful engagement evidence." },
+    { title: "Software (ISV) Partners", detail: "Must be validated on the Software Path. Requires passing a Foundational Technical Review (FTR) + customer case studies." },
+    { title: "How to Apply", detail: "Submit via AWS Partner Central → work with your Partner Development Manager (PDM) through audit and validation." },
+  ]},
+];
+
+const DATA = {
+  name:"AWS Competency Programs",icon:"☁️",description:"AWS designates Partners who demonstrate deep technical expertise and proven customer success in a specific domain.",
+  children:[
+    { name:"Industry",icon:"🏢",description:"Competencies for partners specializing in specific vertical industries.",children:[
+      { name:"Healthcare & Life Sciences",icon:"🏥",description:"Solutions for clinical, payer, pharma, and genomics workloads.",children:[
+        {name:"Clinical Informatics",description:"EHR integrations, clinical decision support, patient data platforms."},
+        {name:"Payer",description:"Claims processing, member management, value-based care."},
+        {name:"Pharma & Biotech",description:"Drug discovery, clinical trials, regulatory compliance."},
+        {name:"Genomics",description:"Genome sequencing pipelines, bioinformatics, population health."},
+      ]},
+      { name:"Financial Services",icon:"💰",description:"Solutions for banking, capital markets, insurance, and payments.",children:[
+        {name:"Banking",description:"Core banking modernization, digital banking, compliance."},
+        {name:"Capital Markets",description:"Trading platforms, risk analytics, market data."},
+        {name:"Insurance",description:"Policy management, claims automation, fraud detection."},
+        {name:"Payments",description:"Payment processing, fraud prevention, PCI-DSS compliance."},
+      ]},
+      { name:"Education",icon:"🎓",description:"K-12, higher education, and EdTech solutions on AWS.",children:[
+        {name:"K-12",description:"Student information systems, remote learning, safety."},
+        {name:"Higher Education",description:"LMS platforms, research computing, student success."},
+        {name:"EdTech",description:"Adaptive learning, content delivery, credentialing."},
+      ]},
+      { name:"Media & Entertainment",icon:"🎬",description:"Content creation, delivery, and monetization solutions.",children:[
+        {name:"Broadcast",description:"Live streaming, playout, media supply chain."},
+        {name:"OTT & Streaming",description:"Video-on-demand, adaptive bitrate, CDN integration."},
+        {name:"Gaming",description:"Game servers, player analytics, anti-cheat systems."},
+      ]},
+      { name:"Retail",icon:"🛒",description:"E-commerce, supply chain, and in-store experience solutions.",children:[
+        {name:"E-Commerce",description:"Digital storefronts, personalization, order management."},
+        {name:"Supply Chain",description:"Inventory optimization, demand forecasting, logistics."},
+        {name:"In-Store Technology",description:"POS modernization, loss prevention, smart store."},
+      ]},
+      { name:"Government",icon:"🏛️",description:"Federal, state/local, and defense sector solutions.",children:[
+        {name:"Federal",description:"FedRAMP-compliant workloads, mission systems, GovCloud."},
+        {name:"State & Local",description:"Constituent services, permitting, benefits platforms."},
+        {name:"Defense & Intelligence",description:"Secure enclaves, C2 systems, classified workloads."},
+      ]},
+      { name:"Energy",icon:"⚡",description:"Oil & gas, utilities, and renewable energy solutions.",children:[
+        {name:"Oil & Gas",description:"Upstream/downstream analytics, IoT sensors, HSE."},
+        {name:"Utilities",description:"Smart grid, outage management, customer engagement."},
+        {name:"Renewables",description:"Wind/solar optimization, energy trading, asset monitoring."},
+      ]},
+    ]},
+    { name:"Workload",icon:"⚙️",description:"Competencies for migrating or managing specific third-party technology workloads on AWS.",children:[
+      { name:"SAP",icon:"🔷",description:"SAP workload migrations and operations on AWS.",children:[
+        {name:"SAP Migration",description:"Lift-and-shift and re-platform of SAP landscapes to AWS."},
+        {name:"SAP S/4HANA",description:"New implementations and conversions to S/4HANA on AWS."},
+        {name:"SAP Operations",description:"Run, monitor, and optimize SAP on AWS long-term."},
+      ]},
+      { name:"Microsoft Workloads",icon:"🪟",description:"Windows Server, SQL Server, .NET, and Active Directory on AWS.",children:[
+        {name:"Windows Server",description:"EC2 Windows migrations, licensing optimization, BYOL."},
+        {name:"SQL Server",description:"SQL Server on RDS or EC2, migration from on-prem."},
+        {name:".NET Modernization",description:"Refactoring .NET apps to containers or serverless."},
+        {name:"Active Directory",description:"AWS Managed Microsoft AD, hybrid identity."},
+      ]},
+      { name:"Oracle",icon:"🔴",description:"Oracle Database and application workloads on AWS.",children:[
+        {name:"Oracle DB Migration",description:"Migrating Oracle databases to RDS, Aurora, or EC2."},
+        {name:"Oracle Applications",description:"E-Business Suite, JD Edwards, PeopleSoft on AWS."},
+      ]},
+      { name:"VMware",icon:"🟦",description:"VMware workload migration and hybrid cloud via VMware Cloud on AWS.",children:[
+        {name:"VMware Cloud Migration",description:"Moving vSphere workloads to VMware Cloud on AWS."},
+        {name:"Hybrid Cloud",description:"Bridging on-prem VMware with AWS native services."},
+      ]},
+    ]},
+    { name:"Use Case / Solution",icon:"🧩",description:"Competencies for cross-industry technical domains and solution patterns.",children:[
+      { name:"Security",icon:"🔒",badge:"Updated",description:"End-to-end security solutions validated by AWS across 8 specialized domains.",children:[
+        {name:"Infrastructure Security",description:"Vulnerability management, configuration security (AWS Config), and patch management."},
+        {name:"Identity & Access Management",description:"Zero-trust architectures, privileged access management, and centralized identity."},
+        {name:"Data Protection",description:"Encryption strategy (AWS KMS), sensitive data discovery (Amazon Macie), and data loss prevention."},
+        {name:"Application Security",description:"WAF management, API security, and DevSecOps pipeline integration."},
+        {name:"Network & Infrastructure Protection",description:"DDoS protection (AWS Shield), network firewalls, and traffic segmentation."},
+        {name:"Threat Detection & Response",description:"24/7 monitoring, incident response, and forensics using Amazon GuardDuty and SIEM tooling."},
+        {name:"Compliance & Governance",description:"Automated evidence collection (AWS Audit Manager), HIPAA, PCI-DSS, and regulatory framework alignment."},
+        {name:"AI Security",description:"🆕 Securing generative AI workloads, implementing AI guardrails, and protecting training datasets."},
+      ]},
+      { name:"Generative AI",icon:"✨",badge:"New",description:"Building, deploying, and operating generative AI solutions on AWS using Amazon Bedrock and SageMaker.",children:[
+        { name:"Foundation Model Solutions",description:"Apps built on FMs via Amazon Bedrock — prompt engineering, model selection, fine-tuning.",children:[
+          {name:"Text & Language Generation",description:"Summarization, content creation, document Q&A using Bedrock-hosted FMs."},
+          {name:"Code Generation",description:"AI-assisted development tools, code review, and developer productivity on AWS."},
+          {name:"Multimodal AI",description:"Image, audio, and video understanding combined with text-based reasoning."},
+        ]},
+        { name:"RAG & Knowledge Solutions",description:"Retrieval-Augmented Generation architectures that ground FM responses in enterprise data.",children:[
+          {name:"Knowledge Bases",description:"Bedrock Knowledge Bases, vector databases (OpenSearch, Aurora pgvector), semantic search."},
+          {name:"Enterprise Search",description:"Intelligent document retrieval, FAQ automation, internal knowledge assistants."},
+        ]},
+        { name:"AI Agents & Automation",description:"Agentic AI workflows that take multi-step actions using Amazon Bedrock Agents.",children:[
+          {name:"Bedrock Agents",description:"Building autonomous agents with tool use, API integrations, and memory."},
+          {name:"Workflow Automation",description:"AI-driven business process automation, orchestration, and human-in-the-loop patterns."},
+        ]},
+        { name:"MLOps & Model Operations",description:"Lifecycle management for GenAI models — training, evaluation, deployment, and monitoring.",children:[
+          {name:"Model Fine-Tuning",description:"Custom model adaptation using SageMaker or Bedrock custom model import."},
+          {name:"Evaluation & Guardrails",description:"Model evaluation, Amazon Bedrock Guardrails, bias detection, and responsible AI."},
+          {name:"Inference Optimization",description:"Latency tuning, cost optimization, and scaling for production GenAI."},
+        ]},
+        { name:"Industry GenAI Solutions",description:"Vertical-specific GenAI applications validated for real-world deployments.",children:[
+          {name:"Healthcare AI",description:"Clinical documentation, medical Q&A, and patient engagement using GenAI on AWS."},
+          {name:"Financial AI",description:"Risk summarization, compliance copilots, and fraud narrative generation."},
+          {name:"Retail & Supply Chain AI",description:"Product descriptions, demand signal interpretation, and customer service automation."},
+        ]},
+      ]},
+      { name:"Data & Analytics",icon:"📊",description:"Data engineering, BI, and analytics platform solutions.",children:[
+        {name:"Data Lakes",description:"S3-based data lake architecture, governance, cataloging."},
+        {name:"Data Warehousing",description:"Redshift, migration from on-prem DW solutions."},
+        {name:"Business Intelligence",description:"QuickSight, Tableau, Power BI on AWS."},
+        {name:"Streaming Analytics",description:"Kinesis, Kafka, real-time data pipelines."},
+        {name:"Data Governance",description:"Lineage, cataloging, quality, access control."},
+      ]},
+      { name:"Machine Learning",icon:"🤖",description:"AI/ML model development, deployment, and operations (non-GenAI).",children:[
+        {name:"MLOps",description:"SageMaker pipelines, CI/CD for ML, model monitoring."},
+        {name:"Computer Vision",description:"Rekognition, custom CV models, image/video analysis."},
+        {name:"Natural Language Processing",description:"Comprehend, classical NLP models, text classification."},
+        {name:"Forecasting",description:"Demand forecasting, anomaly detection, time-series models."},
+      ]},
+      { name:"DevOps",icon:"🔄",description:"CI/CD, infrastructure as code, and developer platform solutions.",children:[
+        {name:"CI/CD Pipelines",description:"CodePipeline, Jenkins, GitHub Actions on AWS."},
+        {name:"Infrastructure as Code",description:"CloudFormation, Terraform, CDK solutions."},
+        {name:"Containers & Kubernetes",description:"ECS, EKS, Fargate, service mesh."},
+        {name:"Observability",description:"CloudWatch, Grafana, distributed tracing, logging."},
+      ]},
+      { name:"Migration",icon:"🚚",description:"Workload assessment, migration planning, and execution.",children:[
+        {name:"Server Migration",description:"MGN, rehost/replatform of virtual and physical servers."},
+        {name:"Database Migration",description:"DMS, Schema Conversion Tool, heterogeneous migrations."},
+        {name:"Application Migration",description:"7Rs strategy, refactoring legacy apps."},
+        {name:"Migration Program Management",description:"Wave planning, MRA, MAP engagements."},
+      ]},
+      { name:"Networking",icon:"🌐",description:"Network design, connectivity, and edge solutions.",children:[
+        {name:"Hybrid Connectivity",description:"Direct Connect, VPN, Transit Gateway design."},
+        {name:"Network Security",description:"Network Firewall, Shield, WAF architectures."},
+        {name:"Edge Computing",description:"Outposts, Wavelength, Local Zones."},
+        {name:"SD-WAN",description:"Cloud WAN, third-party SD-WAN on AWS."},
+      ]},
+      { name:"Storage",icon:"🗄️",description:"Primary, backup, archive, and hybrid storage solutions.",children:[
+        {name:"Backup & Disaster Recovery",description:"AWS Backup, cross-region DR, RTO/RPO optimization."},
+        {name:"File Storage",description:"EFS, FSx, hybrid NAS solutions."},
+        {name:"Data Archive",description:"S3 Glacier, long-term retention, compliance archiving."},
+        {name:"Storage Migration",description:"DataSync, Snow family, online/offline transfer."},
+      ]},
+      { name:"Serverless",icon:"⚡",description:"Event-driven and serverless application architectures.",children:[
+        {name:"Lambda-Based Apps",description:"Function design, event-driven patterns, cold start optimization."},
+        {name:"API-First Architecture",description:"API Gateway, AppSync, microservices integration."},
+        {name:"Event-Driven Integration",description:"EventBridge, SNS/SQS, choreography vs orchestration."},
+      ]},
+    ]},
+  ]
+};
+
+const THEME = {
+  Industry:          { bg:"ind-bg", border:"ind-border", text:"ind-text", light:"ind-light", badge:"ind-badge" },
+  Workload:          { bg:"wkl-bg", border:"wkl-border", text:"wkl-text", light:"wkl-light", badge:"wkl-badge" },
+  "Use Case / Solution": { bg:"uc-bg", border:"uc-border", text:"uc-text", light:"uc-light", badge:"uc-badge" },
+};
+const DEFAULT_THEME = THEME["Use Case / Solution"];
+
+function getTheme(path) {
+  if (path.length < 2) return DEFAULT_THEME;
+  return THEME[path[1].name] || DEFAULT_THEME;
+}
+
+function BenefitsPage({ onBack }) {
+  return (
+    <div className="wrap">
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
+        <button className="nav-btn" onClick={onBack}>← Back</button>
+        <div>
+          <div style={{fontSize:22,fontWeight:800}}>🏆 Program Benefits & Requirements</div>
+          <div style={{color:"#9ca3af",fontSize:13,marginTop:2}}>Applies to all AWS Competency programs</div>
+        </div>
+      </div>
+      <div className="ben-intro">
+        Earning any AWS Competency unlocks a standard set of program benefits — regardless of which competency category you achieve. These benefits are designed to help partners grow their business, increase visibility, and deepen their relationship with AWS.
+      </div>
+      {BENEFITS.map((s,i) => (
+        <div className="ben-section" key={i}>
+          <div style={{fontWeight:700,fontSize:15,marginBottom:14}}>{s.category}</div>
+          <div className="ben-grid">
+            {s.items.map((item,j) => (
+              <div className="ben-card" key={j}>
+                <div style={{fontWeight:600,fontSize:13,color:"#fff",marginBottom:6}}>{item.title}</div>
+                <div style={{fontSize:12,color:"#9ca3af",lineHeight:1.6}}>{item.detail}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+      <button className="back-link" onClick={onBack}>← Back to Explorer</button>
+    </div>
+  );
+}
+
+function Card({ node, onClick, theme }) {
+  const isLeaf = !node.children;
+  return (
+    <div
+      className={`card ${theme.border} ${isLeaf ? theme.light : theme.bg} ${!isLeaf ? "clickable" : ""}`}
+      style={{opacity: isLeaf ? 0.9 : 1}}
+      onClick={!isLeaf ? onClick : undefined}
+    >
+      <div style={{display:"flex",alignItems:"flex-start",gap:8}}>
+        {node.icon && <span style={{fontSize:22,lineHeight:1,marginTop:2}}>{node.icon}</span>}
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+            <span style={{fontWeight:700,fontSize:13,color:"#fff"}}>{node.name}</span>
+            {node.badge === "New" && <span className="badge badge-new">New</span>}
+            {node.badge === "Updated" && <span className="badge badge-updated">Updated</span>}
+          </div>
+          {node.description && <div style={{fontSize:12,marginTop:4,lineHeight:1.5}} className={theme.text}>{node.description}</div>}
+        </div>
+      </div>
+      {!isLeaf && (
+        <div style={{fontSize:12,display:"flex",justifyContent:"space-between"}} className={theme.text}>
+          <span>{node.children.length} sub-areas</span>
+          <span>Explore →</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Explorer() {
+  const [page, setPage] = useState("explorer");
+  const [path, setPath] = useState([DATA]);
+
+  if (page === "benefits") return <BenefitsPage onBack={() => setPage("explorer")} />;
+
+  const current = path[path.length - 1];
+  const theme = getTheme(path);
+  const depth = path.length - 1;
+
+  const navigate = (node) => { if (node.children) setPath([...path, node]); };
+  const goTo = (i) => setPath(path.slice(0, i + 1));
+
+  return (
+    <div className="wrap">
+      {/* Top nav */}
+      <div className="topnav">
+        <div style={{fontSize:20,fontWeight:800}}>☁️ AWS Competency Explorer</div>
+        <button className="nav-btn" onClick={() => setPage("benefits")}>🏆 Program Benefits</button>
+      </div>
+      <div style={{color:"#9ca3af",fontSize:13,marginBottom:6}}>Click any card to drill down. Use breadcrumbs to navigate back.</div>
+      <div className="tags" style={{marginBottom:16}}>
+        <span className="tag-new">New — Generative AI</span>
+        <span className="tag-upd">Updated — Security</span>
+      </div>
+
+      {/* Breadcrumb */}
+      <div className="breadcrumb">
+        {path.map((node, i) => (
+          <span key={i} style={{display:"flex",alignItems:"center",gap:4}}>
+            {i > 0 && <span className="bc-sep">›</span>}
+            <button className={`bc-btn ${i === path.length-1 ? "active" : ""}`} onClick={() => goTo(i)}>
+              {node.icon ? `${node.icon} ${node.name}` : node.name}
+            </button>
+          </span>
+        ))}
+      </div>
+
+      {/* Level header */}
+      <div className={`lvl-header ${theme.border} ${theme.bg}`} style={{marginBottom:20}}>
+        {current.icon && <span style={{fontSize:28}}>{current.icon}</span>}
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+            <span style={{fontSize:18,fontWeight:700}}>{current.name}</span>
+            {current.badge === "New" && <span className="badge badge-new">New</span>}
+            {current.badge === "Updated" && <span className="badge badge-updated">Updated</span>}
+          </div>
+          {current.description && <div style={{fontSize:13,marginTop:4}} className={theme.text}>{current.description}</div>}
+        </div>
+        {depth > 0 && (
+          <span className="badge" style={{background:theme.badge==="ind-badge"?"#3b82f6":theme.badge==="wkl-badge"?"#8b5cf6":"#10b981",color:"#fff",whiteSpace:"nowrap"}}>
+            Level {depth}
+          </span>
+        )}
+      </div>
+
+      {/* Grid */}
+      {current.children ? (
+        <div className={`grid ${current.children.length > 3 ? "grid-2" : "grid-2 grid-3"}`}>
+          {current.children.map((child, i) => {
+            const t = depth === 0 ? (THEME[child.name] || theme) : theme;
+            return <Card key={i} node={child} onClick={() => navigate(child)} theme={t} />;
+          })}
+        </div>
+      ) : (
+        <div className={`leaf ${theme.border} ${theme.light}`} style={{textAlign:"center",padding:32}}>
+          <div style={{fontSize:36,marginBottom:12}}>🏆</div>
+          <div style={{fontWeight:700,fontSize:16}}>{current.name}</div>
+          <div style={{fontSize:13,marginTop:8,maxWidth:400,margin:"8px auto 0"}} className={theme.text}>{current.description}</div>
+          <button
+            onClick={() => setPath(path.slice(0,-1))}
+            style={{marginTop:16,fontSize:12,padding:"6px 16px",borderRadius:999,color:"#fff",cursor:"pointer",border:"none"}}
+            className={theme.badge}
+          >← Back</button>
+        </div>
+      )}
+
+      {/* Back link */}
+      {path.length > 1 && current.children && (
+        <button className="back-link" onClick={() => setPath(path.slice(0,-1))}>
+          ← Back to {path[path.length-2].name}
+        </button>
+      )}
+
+      {/* Legend */}
+      {depth === 0 && (
+        <div className="legend">
+          {[["Industry","#3b82f6"],["Workload","#8b5cf6"],["Use Case / Solution","#10b981"]].map(([label,color]) => (
+            <span key={label} className="badge" style={{background:color,color:"#fff",padding:"4px 12px",fontSize:12}}>{label}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Explorer />);
+</script>
+</body>
+</html>
